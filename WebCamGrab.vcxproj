@@ -71,8 +71,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>..\WebCamGrab\openCV\build\include;E:\qwe\c++\WebCamGrab\openCV\build\include;$(SolutionDir)openCV\build\include;$(IncludePath)</IncludePath>
-    <LibraryPath>E:\qwe\c++\WebCamGrab\openCV\build\x64\vc16\lib;D:\qwe\visual st\WebCamGrab\WebCamGrab\openCV\build\x64\vc16\lib;D:\qwe\WebCamGrab\WebCamGrab\openCV\build\x64\vc16\lib;..\WebCamGrab\openCV\build\x64\vc16\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\WebCamGrab\openCV\build\include;$(IncludePath)</IncludePath>
+    <LibraryPath>..\WebCamGrab\openCV\build\x64\vc16\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

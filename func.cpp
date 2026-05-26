@@ -1,7 +1,10 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "func.h"
 #include <thread>
 #include <chrono>
 #include <fstream>
+
 
 void simpleCamera() {
     VideoCapture cap(0);
@@ -22,36 +25,265 @@ void simpleCamera() {
     cap.release();
     destroyAllWindows();
 }
+void motionRecord() {
+    VideoCapture cap(0);
+    if (!cap.isOpened()) {
+        cerr << "Cannot open camera!" << endl;
+        return;
+    }
+
+    // Настройки камеры для оптимальной работы
+    cap.set(CAP_PROP_FRAME_WIDTH, 640);
+    cap.set(CAP_PROP_FRAME_HEIGHT, 480);
+    cap.set(CAP_PROP_FPS, 30);
+
+    Mat frame, prevFrame, gray, diff;
+    Mat recordingFrame;  // Для сохранения кадров
+
+    // Инициализация первого кадра (фона)
+    cap >> prevFrame;
+    if (prevFrame.empty()) {
+        cerr << "Cannot get initial frame!" << endl;
+        return;
+    }
+    cvtColor(prevFrame, prevFrame, COLOR_BGR2GRAY);
+    GaussianBlur(prevFrame, prevFrame, Size(21, 21), 0);
+
+    // Параметры детекции движения
+    const int MOTION_THRESHOLD = 25;      // Порог чувствительности
+    const double MOTION_AREA_RATIO = 0.01; // 1% площади кадра должно измениться
+
+    // Параметры записи видео
+    bool isRecording = false;              // Флаг: идет ли запись
+    bool motionDetected = false;           // Флаг: есть ли движение
+    VideoWriter writer;                    // Объект для записи
+    string filename;                       // Имя файла
+    int recordingCounter = 0;              // Счетчик записанных файлов
+    int framesSinceLastMotion = 0;         // Кадров без движения после последнего
+    const int STOP_AFTER_FRAMES = 30;      // Останавливаем запись через 30 кадров без движения (~1 секунда)
+
+    // Параметры отображения
+    int frameWidth = 640;
+    int frameHeight = 480;
+    int totalMotionPixels = 0;
+
+    cout << "Motion Recording Started. Press ESC to exit." << endl;
+    cout << "Recording will start automatically when motion is detected." << endl;
+    cout << "Recording will stop " << STOP_AFTER_FRAMES << " frames after motion ends." << endl;
+
+    while (true) {
+        cap >> frame;
+        if (frame.empty()) break;
+
+        // Обработка текущего кадра для детекции движения
+        cvtColor(frame, gray, COLOR_BGR2GRAY);
+        GaussianBlur(gray, gray, Size(21, 21), 0);
+
+        // Вычисляем разницу между кадрами
+        absdiff(prevFrame, gray, diff);
+        threshold(diff, diff, MOTION_THRESHOLD, 255, THRESH_BINARY);
+
+        // Подсчитываем количество пикселей, где есть движение
+        totalMotionPixels = countNonZero(diff);
+
+        // Определяем, есть ли движение (больше 1% площади кадра)
+        int frameArea = frameWidth * frameHeight;
+        motionDetected = (totalMotionPixels > frameArea * MOTION_AREA_RATIO);
+
+        // Логика управления записью
+        if (motionDetected && !isRecording) {
+            // НАЧАЛО ЗАПИСИ: обнаружено движение, а запись еще не идет
+            isRecording = true;
+            framesSinceLastMotion = 0;
+
+            // Создаем уникальное имя файла с timestamp
+            time_t now = time(0);
+            char timestamp[64];
+            strftime(timestamp, sizeof(timestamp), "%Y%m%d_%H%M%S", localtime(&now));
+            filename = "motion_" + string(timestamp) + "_" + to_string(recordingCounter) + ".mp4";
+
+            // Инициализируем VideoWriter
+            int fourcc = VideoWriter::fourcc('X', 'V', 'I', 'D');
+            writer.open(filename, fourcc, 20.0, Size(frameWidth, frameHeight), true);
+
+            if (writer.isOpened()) {
+                cout << ">>> RECORDING STARTED: " << filename << endl;
+                cout << "    Motion pixels: " << totalMotionPixels << " / " << frameArea << endl;
+            }
+            else {
+                cerr << "Failed to create video file!" << endl;
+                isRecording = false;
+            }
+        }
+
+        // Если идет запись
+        if (isRecording) {
+            // Создаем кадр для записи с информацией (опционально)
+            Mat frameToRecord = frame.clone();
+
+            // Добавляем визуальную информацию на записываемый кадр
+            string recordInfo = "RECORDING - Motion detected";
+            putText(frameToRecord, recordInfo, Point(10, 30),
+                FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 0, 255), 2);
+
+            // Рисуем красную точку в углу (индикатор записи)
+            circle(frameToRecord, Point(frameWidth - 20, 20), 10, Scalar(0, 0, 255), -1);
+
+            // Отображаем количество движущихся пикселей
+            string motionInfo = "Motion: " + to_string(totalMotionPixels) + " px";
+            putText(frameToRecord, motionInfo, Point(10, 60),
+                FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255), 1);
+
+            // Записываем кадр
+            writer.write(frameToRecord);
+
+            // Обновляем счетчик кадров без движения
+            if (!motionDetected) {
+                framesSinceLastMotion++;
+            }
+            else {
+                framesSinceLastMotion = 0;  // Сброс, если движение есть
+            }
+
+            // Останавливаем запись, если нет движения достаточно долго
+            if (framesSinceLastMotion >= STOP_AFTER_FRAMES) {
+                isRecording = false;
+                writer.release();
+                cout << ">>> RECORDING STOPPED: " << filename << " (no motion for "
+                    << STOP_AFTER_FRAMES << " frames)" << endl;
+                recordingCounter++;
+            }
+        }
+
+        // ВИЗУАЛИЗАЦИЯ для отображения на экране
+
+        // Создаем кадр для отображения (с информацией)
+        Mat displayFrame = frame.clone();
+
+        // Отображаем маску движения (в углу, маленькую)
+        Mat smallDiff;
+        resize(diff, smallDiff, Size(160, 120));
+        Mat diffColor;
+        cvtColor(smallDiff, diffColor, COLOR_GRAY2BGR);
+
+        // Вставляем маленькую маску в угол
+        Rect roi(Point(10, frameHeight - 130), diffColor.size());
+        diffColor.copyTo(displayFrame(roi));
+        rectangle(displayFrame, roi, Scalar(255, 255, 255), 1);
+
+        // Статус записи
+        string statusText;
+        Scalar statusColor;
+        if (isRecording) {
+            statusText = "● RECORDING";
+            statusColor = Scalar(0, 0, 255);  // Красный
+        }
+        else if (motionDetected) {
+            statusText = "MOTION DETECTED (starting...)";
+            statusColor = Scalar(0, 255, 255);  // Желтый
+        }
+        else {
+            statusText = "Waiting for motion";
+            statusColor = Scalar(0, 255, 0);  // Зеленый
+        }
+        putText(displayFrame, statusText, Point(10, 30),
+            FONT_HERSHEY_SIMPLEX, 0.7, statusColor, 2);
+
+        // Отображаем количество записанных файлов
+        string recordCount = "Recorded: " + to_string(recordingCounter);
+        putText(displayFrame, recordCount, Point(10, 60),
+            FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 255, 255), 1);
+
+        // Отображаем уровень движения (графическая шкала)
+        int motionPercent = (totalMotionPixels * 100) / (frameWidth * frameHeight);
+        int barWidth = (motionPercent * 200) / 100;
+        rectangle(displayFrame, Point(10, 80), Point(10 + barWidth, 95),
+            Scalar(0, 255, 0), -1);
+        rectangle(displayFrame, Point(10, 80), Point(210, 95),
+            Scalar(255, 255, 255), 1);
+        putText(displayFrame, to_string(motionPercent) + "%", Point(220, 93),
+            FONT_HERSHEY_SIMPLEX, 0.4, Scalar(255, 255, 255), 1);
+
+        // Показываем результат
+        imshow("Motion Recording", displayFrame);
+
+        // Обновляем эталонный кадр
+        prevFrame = gray.clone();
+
+        // Выход по ESC
+        char key = waitKey(1);
+        if (key == 27) break;
+
+        // Дополнительные горячие клавиши
+        if (key == 'm') {  // Принудительное начало записи
+            if (!isRecording) {
+                isRecording = true;
+                framesSinceLastMotion = 0;
+                time_t now = time(0);
+                char timestamp[64];
+                strftime(timestamp, sizeof(timestamp), "%Y%m%d_%H%M%S", localtime(&now));
+                filename = "manual_" + string(timestamp) + ".avi";
+                writer.open(filename, VideoWriter::fourcc('X', 'V', 'I', 'D'),
+                    20.0, Size(frameWidth, frameHeight), true);
+                cout << ">>> MANUAL RECORDING STARTED" << endl;
+            }
+        }
+
+        if (key == 's' && isRecording) {  // Принудительная остановка записи
+            isRecording = false;
+            writer.release();
+            cout << ">>> MANUAL RECORDING STOPPED" << endl;
+        }
+    }
+
+    // Очистка ресурсов
+    if (isRecording) {
+        writer.release();
+    }
+    cap.release();
+    destroyAllWindows();
+
+    cout << "\n=== SUMMARY ===" << endl;
+    cout << "Total recordings: " << recordingCounter << endl;
+    cout << "Program finished." << endl;
+}
 
 void motionDetection() {
     VideoCapture cap(0);
     Mat frame, prevFrame, diff;
+    // frame: текущий кадр
+    // prevFrame: предыдущий кадр (эталон)
+    // diff: разница между кадрами
 
-    cap >> prevFrame;
-    cvtColor(prevFrame, prevFrame, COLOR_BGR2GRAY);
-    GaussianBlur(prevFrame, prevFrame, Size(21, 21), 0);
+    cap >> prevFrame;                                    // Первый кадр
+    cvtColor(prevFrame, prevFrame, COLOR_BGR2GRAY);     // В серый
+    GaussianBlur(prevFrame, prevFrame, Size(21, 21), 0); // Сильное размытие
 
     while (true) {
         cap >> frame;
         if (frame.empty()) break;
 
         Mat gray;
-        cvtColor(frame, gray, COLOR_BGR2GRAY);
-        GaussianBlur(gray, gray, Size(21, 21), 0);
+        cvtColor(frame, gray, COLOR_BGR2GRAY);          // Текущий в серый
+        GaussianBlur(gray, gray, Size(21, 21), 0);       // Размытие
 
-        absdiff(prevFrame, gray, diff);
-        threshold(diff, diff, 25, 255, THRESH_BINARY);
+        absdiff(prevFrame, gray, diff);                 // |prev - current|
+        threshold(diff, diff, 25, 255, THRESH_BINARY);  // Бинаризация
 
         imshow("Motion Detection", diff);
 
         if (waitKey(1) == 27) break;
-        prevFrame = gray.clone();
+        prevFrame = gray.clone();                       // Обновляем эталон
     }
 }
 
 void colorTracking() {
     VideoCapture cap(0);
     Mat frame, hsv, mask, result;
+    // frame: исходный BGR кадр
+    // hsv: кадр в HSV (Hue/Saturation/Value)
+    // mask: бинарная маска (белое = зеленый цвет)
+    // result: frame + нарисованные рамки
 
     // Диапазон зеленого цвета в HSV
     Scalar lowerGreen(35, 100, 100);
@@ -61,18 +293,20 @@ void colorTracking() {
         cap >> frame;
         if (frame.empty()) break;
 
-        cvtColor(frame, hsv, COLOR_BGR2HSV);
-        inRange(hsv, lowerGreen, upperGreen, mask);
+        cvtColor(frame, hsv, COLOR_BGR2HSV);          // Конвертация в HSV
+        inRange(hsv, lowerGreen, upperGreen, mask);   // Создание маски
 
         // Поиск контуров
         vector<vector<Point>> contours;
         findContours(mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+        // RETR_EXTERNAL: только внешние контуры
+        // CHAIN_APPROX_SIMPLE: сжатие (только угловые точки)
 
-        frame.copyTo(result);
+        frame.copyTo(result);                          // Копируем для отображения
         for (auto& contour : contours) {
-            if (contourArea(contour) > 500) {
-                Rect rect = boundingRect(contour);
-                rectangle(result, rect, Scalar(0, 0, 255), 2);
+            if (contourArea(contour) > 500) {          // Фильтр по площади
+                Rect rect = boundingRect(contour);     // Прямоугольник вокруг
+                rectangle(result, rect, Scalar(0, 0, 255), 2); // Рамка
             }
         }
 
@@ -82,22 +316,16 @@ void colorTracking() {
 }
 
 void faceDetection() {
-    // Укажите полный путь к файлу
     CascadeClassifier faceCascade;
     string cascadePath = "openCV\\build\\etc\\haarcascades\\haarcascade_frontalface_default.xml";
+    // Путь к обученной модели Хаара
 
     if (!faceCascade.load(cascadePath)) {
         cerr << "Error loading cascade file: " << cascadePath << endl;
-        cerr << "Check if file exists!" << endl;
         return;
     }
 
-    VideoCapture cap(0);  // Исправлено: cap, а не can
-    if (!cap.isOpened()) {
-        cerr << "Cannot open camera!" << endl;
-        return;
-    }
-
+    VideoCapture cap(0);
     Mat frame, gray;
 
     while (true) {
@@ -105,13 +333,14 @@ void faceDetection() {
         if (frame.empty()) break;
 
         cvtColor(frame, gray, COLOR_BGR2GRAY);
-        equalizeHist(gray, gray);
+        equalizeHist(gray, gray);  // Выравнивание гистограммы (улучшает контраст)
 
         vector<Rect> faces;
         faceCascade.detectMultiScale(gray, faces, 1.1, 3, 0, Size(30, 30));
+        // параметры: изображение, выход, scaleFactor, minNeighbors, flags, minSize
 
         for (const auto& face : faces) {
-            rectangle(frame, face, Scalar(0, 255, 0), 2);
+            rectangle(frame, face, Scalar(0, 255, 0), 2); // Зеленая рамка
         }
 
         imshow("Face Detection", frame);
@@ -121,6 +350,7 @@ void faceDetection() {
     cap.release();
     destroyAllWindows();
 }
+
 
 void edgeDetection() {
     VideoCapture cap(0);
@@ -146,6 +376,7 @@ void CAM1() {
     cout << "3 - Color Tracking\n";
     cout << "4 - Edge Detection\n";
     cout << "5 - Face Detection\n";
+    cout << "6 - Motion Recording (NEW!)\n";  // Добавлен новый пункт
 
     int choice;
     cin >> choice;
@@ -156,9 +387,9 @@ void CAM1() {
     case 3: colorTracking(); break;
     case 4: edgeDetection(); break;
     case 5: faceDetection(); break;
+    case 6: motionRecord(); break;  // Новая функция
     default: simpleCamera(); break;
     }
-
 }
 void _cam() {
     VideoCapture cap(0);
