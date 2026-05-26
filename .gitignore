@@ -1,0 +1,49 @@
+# Visual Studio temporary files
+.vs/
+*.ipch
+*.vsidx
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+build/
+[Bb]in/
+[Oo]bj/
+out/
+*.exe
+*.exe.config
+*.dll
+*.so
+*.dylib
+*.pdb
+
+# OpenCV (бинарные файлы - НЕ ХРАНИТЬ В GIT)
+opencv/build/
+opencv/install/
+opencv/downloads/
+opencv/cache/
+
+# Visual Studio internal files
+*.VC.db
+*.VC.opendb
+*.opensdf
+*.sdf
+
+# Compiled source files
+*.com
+*.class
+*.o
+*.obj
+
+# Backup files
+*.bak
+*.tmp
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+Thumbs.db
+desktop.ini

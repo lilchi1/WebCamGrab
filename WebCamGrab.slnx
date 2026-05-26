@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="WebCamGrab.vcxproj" Id="8af6e3b2-5a09-4dda-af77-3567ae7c5db5" />
+</Solution>
