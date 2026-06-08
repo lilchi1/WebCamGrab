@@ -1,49 +1,88 @@
-# Visual Studio temporary files
+# Visual Studio
 .vs/
-*.ipch
-*.vsidx
+Debug/
+Release/
+x64/
+x86/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
 *.suo
 *.user
 *.userosscache
-*.sln.docstates
-
-# Build results
-build/
-[Bb]in/
-[Oo]bj/
-out/
-*.exe
-*.exe.config
-*.dll
-*.so
-*.dylib
-*.pdb
-
-# OpenCV (бинарные файлы - НЕ ХРАНИТЬ В GIT)
-opencv/build/
-opencv/install/
-opencv/downloads/
-opencv/cache/
-
-# Visual Studio internal files
+*.sdf
+*.opensdf
 *.VC.db
 *.VC.opendb
-*.opensdf
-*.sdf
 
-# Compiled source files
-*.com
-*.class
-*.o
-*.obj
+# Build files
+build/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
 
-# Backup files
-*.bak
+# OpenCV compiled files
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.dll
+*.exe
+
+# Model files (большие файлы, ~200 МБ)
+models/pose_iter_160000.caffemodel
+models/opencv_face_detector_uint8.pb
+
+# Cascades files (можно оставить, они маленькие)
+# cascades/
+
+# Output files (записи и скриншоты)
+output/
+*.mp4
+*.avi
+*.jpg
+*.png
+
+# Motion recording files
+motion_*.mp4
+motion_*.avi
+manual_*.avi
+record_*.avi
+
+# Screenshots
+screenshot_*.jpg
+screenshot_*.png
+
+# Logs
+*.log
+*.txt
+
+# Temporary files
 *.tmp
+*.temp
+*.cache
+*.backup
 *~
 
-# OS generated files
+# Compiled output
+*.exe
+*.exe.manifest
+*.obj
+*.o
+*.so
+*.dylib
+
+# IDE files
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
-.DS_Store?
 Thumbs.db
-desktop.ini
+
+# Config files with local settings
+config.json
+config.txt

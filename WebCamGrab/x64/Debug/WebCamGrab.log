@@ -2,4 +2,8 @@
   D:\qwe\visual st\WebCamGrab\openCV\build\x64\vc16\bin\opencv_world4120d.dll
   ╤ъюяшЁютрэю Їрщыют: 2.
   func.cpp
+D:\qwe\visual st\WebCamGrab\func.cpp(588,24): warning C4244: инициализация: преобразование "float" в "int", возможна потеря данных
+D:\qwe\visual st\WebCamGrab\func.cpp(589,24): warning C4244: инициализация: преобразование "float" в "int", возможна потеря данных
+D:\qwe\visual st\WebCamGrab\func.cpp(590,24): warning C4244: инициализация: преобразование "float" в "int", возможна потеря данных
+D:\qwe\visual st\WebCamGrab\func.cpp(591,24): warning C4244: инициализация: преобразование "float" в "int", возможна потеря данных
   WebCamGrab.vcxproj -> D:\qwe\visual st\WebCamGrab\x64\Debug\WebCamGrab.exe
