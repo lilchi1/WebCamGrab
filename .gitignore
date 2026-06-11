@@ -1,88 +1,46 @@
 # Visual Studio
 .vs/
-Debug/
-Release/
-x64/
-x86/
-*.sln
-*.vcxproj
-*.vcxproj.filters
-*.vcxproj.user
-*.suo
 *.user
+*.suo
 *.userosscache
 *.sdf
 *.opensdf
-*.VC.db
-*.VC.opendb
 
-# Build files
-build/
-cmake-build-*/
-CMakeCache.txt
-CMakeFiles/
-Makefile
-cmake_install.cmake
-
-# OpenCV compiled files
+# Build output
+x64/
+Debug/
+Release/
+ipch/
+*.obj
 *.pdb
 *.ilk
 *.exp
-*.lib
-*.dll
-*.exe
+*.tlog
+*.lastbuildstate
+*.unsuccessfulbuild
 
-# Model files (большие файлы, ~200 МБ)
-models/pose_iter_160000.caffemodel
+# Third-party binaries (download separately)
+ffmpeg.exe
+ffmpeg-*-essentials_build/
+openCV/
+models/pose_iter_*.caffemodel
 models/opencv_face_detector_uint8.pb
 
-# Cascades files (можно оставить, они маленькие)
-# cascades/
-
-# Output files (записи и скриншоты)
+# Output (recordings, screenshots, logs)
 output/
 *.mp4
 *.avi
 *.jpg
 *.png
+camera_log.txt
+ffmpeg_log.txt
 
-# Motion recording files
-motion_*.mp4
-motion_*.avi
-manual_*.avi
-record_*.avi
-
-# Screenshots
-screenshot_*.jpg
-screenshot_*.png
-
-# Logs
-*.log
-*.txt
-
-# Temporary files
+# Temp
 *.tmp
 *.temp
 *.cache
 *.backup
-*~
 
-# Compiled output
-*.exe
-*.exe.manifest
-*.obj
-*.o
-*.so
-*.dylib
-
-# IDE files
-.idea/
-*.swp
-*.swo
-*~
+# OS
 .DS_Store
 Thumbs.db
-
-# Config files with local settings
-config.json
-config.txt
